@@ -7,7 +7,7 @@ Hand gestures in the browser rotate grid squares, driving Max dials in real time
 Twistyface transforms your hand movements into real-time control signals for Max/MSP. Stand in front of your webcam and use simple pinch gestures to manipulate a visual grid that directly controls parameters in your Max patch.
 
 **Video demonstrations:**
-- https://youtu.be/g888f3yPpzQ
+- <a href="https://youtu.be/g888f3yPpzQ?t=6" target="_blank">demo 1 (my vocals!)</a>
 - https://youtu.be/-fIg5q0av5s
 - https://youtu.be/EIoZLmQJgnY
 
