@@ -1,0 +1,1 @@
+Couldn't find the requested file /hands_wasm_bin.js in @mediapipe/hands.

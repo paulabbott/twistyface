@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twistyface</title>
+    <!-- External CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- External Libraries -->
+    <script src="lib/tfjs.min.js"></script>
+    <script src="lib/hand-pose-detection.min.js"></script>
+    <!-- External JavaScript -->
+    <script type="module" src="js/webglContext.js"></script>
+    <script type="module" src="js/handTracking.js"></script>
+    <script type="module" src="js/handTracker.js"></script>
+    <script type="module" src="js/gridManager.js"></script>
+    <script type="module" src="js/videoProcessor.js"></script>
+    <script type="module" src="js/main.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #000;
+        }
+
+        .container {
+            position: relative;
+            width: 50%;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        video,
+        canvas {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+        }
+
+        /* Contain mode styles */
+        .contain-mode video,
+        .contain-mode canvas {
+            width: 100%;
+            height: 100%;
+            min-width: auto;
+            min-height: auto;
+            object-fit: contain;
+        }
+
+        .overlay {
+            pointer-events: none;
+        }
+
+        .grid-overlay {
+            z-index: 1;
+        }
+
+        .hand-overlay {
+            z-index: 2;
+        }
+
+        #video {
+            transform: translate(-50%, -50%) scaleX(-1);
+        }
+
+        #shaderOverlayCanvas {
+            transform: translate(-50%, -50%) scaleX(-1);
+        }
+
+        /* Mode indicator */
+        .mode-indicator {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .mode-indicator.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="videoContainer" class="container">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="gridCanvas" class="overlay grid-overlay"></canvas>
+        <canvas id="handCanvas" class="overlay hand-overlay"></canvas>
+    </div>
+    <div id="shaderContainer" class="container">
+        <canvas id="canvas"></canvas>
+        <canvas id="shaderOverlayCanvas" class="overlay"></canvas>
+        <canvas id="rightHandCanvas" class="overlay hand-overlay"></canvas>
+    </div>
+    <div id="modeIndicator" class="mode-indicator">Cover Mode</div>
+
+    <script>
+        document.addEventListener('keydown', (event) => {
+            if (event.key.toLowerCase() === 'v') {
+                const videoContainer = document.getElementById('videoContainer');
+                const shaderContainer = document.getElementById('shaderContainer');
+                const modeIndicator = document.getElementById('modeIndicator');
+                
+                // Toggle contain mode
+                videoContainer.classList.toggle('contain-mode');
+                shaderContainer.classList.toggle('contain-mode');
+                
+                // Update and show mode indicator
+                const isContainMode = videoContainer.classList.contains('contain-mode');
+                modeIndicator.textContent = isContainMode ? 'Contain Mode' : 'Cover Mode';
+                modeIndicator.classList.add('visible');
+                
+                // Hide indicator after 2 seconds
+                setTimeout(() => {
+                    modeIndicator.classList.remove('visible');
+                }, 2000);
+            }
+        });
+    </script>
+</body>
+
+</html>
