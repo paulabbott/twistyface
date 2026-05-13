@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusMsg     = document.getElementById('statusMsg');
     const startBtn      = document.getElementById('startBtn');
     const recordTimer   = document.getElementById('recordTimer');
+    const debugOverlay  = document.getElementById('debugOverlay');
 
     // --- Video processor (camera starts immediately) ---
     const video               = document.getElementById('video');
@@ -31,12 +32,116 @@ document.addEventListener('DOMContentLoaded', () => {
     );
     videoProcessor.gridManager.onStep = (row, col, delta) => audioEngine.onStep(row, col, delta);
 
+    // --- Debug: per-square values (numbers only) for all rows ---
+    const squareLabels = []; // squareLabels[row][col]
+    const loopSegments = []; // one per row
+
+    for (let row = 0; row < GRID_SIZE; row++) {
+        squareLabels[row] = [];
+        for (let col = 0; col < GRID_SIZE; col++) {
+            const label = document.createElement('div');
+            label.style.position = 'absolute';
+            label.style.top = `${(row / GRID_SIZE) * 100}%`;
+            label.style.left = `${(col / GRID_SIZE) * 100}%`;
+            label.style.width = `${100 / GRID_SIZE}%`;
+            label.style.height = `${100 / GRID_SIZE}%`;
+            label.style.display = 'flex';
+            label.style.alignItems = 'center';
+            label.style.justifyContent = 'center';
+            label.style.textAlign = 'center';
+            label.style.color = '#fff';
+            label.style.fontFamily = 'Menlo, Consolas, monospace';
+            label.style.fontSize = '20px';
+            label.style.lineHeight = '1.5';
+            label.style.pointerEvents = 'none';
+            label.style.transform = 'translateY(-20px)';
+            label.textContent = '–';
+            if (debugOverlay) debugOverlay.appendChild(label);
+            squareLabels[row].push(label);
+        }
+
+        // Loop segment bar for this row: 1px white track, 5px yellow marker
+        const loopBar = document.createElement('div');
+        loopBar.style.position = 'absolute';
+        loopBar.style.left = '5%';
+        loopBar.style.width = '90%';
+        loopBar.style.top = `${((row + 0.5) / GRID_SIZE) * 100}%`;
+        loopBar.style.height = '5px';
+        loopBar.style.transform = 'translateY(-50%)';
+        loopBar.style.background = 'transparent';
+
+        const loopTrack = document.createElement('div');
+        loopTrack.style.position = 'absolute';
+        loopTrack.style.left = '0';
+        loopTrack.style.right = '0';
+        loopTrack.style.top = '50%';
+        loopTrack.style.height = '1px';
+        loopTrack.style.transform = 'translateY(-50%)';
+        loopTrack.style.background = '#fff';
+        loopBar.appendChild(loopTrack);
+
+        const loopSeg = document.createElement('div');
+        loopSeg.style.position = 'absolute';
+        loopSeg.style.top = '50%';
+        loopSeg.style.height = '5px';
+        loopSeg.style.transform = 'translateY(-50%)';
+        loopSeg.style.background = '#ffff00';
+        loopSeg.style.left = '0%';
+        loopSeg.style.width = '100%';
+        loopBar.appendChild(loopSeg);
+        if (debugOverlay) debugOverlay.appendChild(loopBar);
+        loopSegments.push(loopSeg);
+    }
+
+    function formatParamValue(update) {
+        if (update.unit === 's') return update.value.toFixed(3);
+        if (update.unit === 'x') return update.value.toFixed(3);
+        if (update.unit === 'dB') return update.value.toFixed(2);
+        if (update.unit === 'lvl') return update.value.toFixed(1);
+        return update.value.toFixed(3);
+    }
+
+    function updateLoopBar(row) {
+        const player = audioEngine.players[row];
+        if (!player || !audioEngine.buffer) return;
+        const duration = audioEngine.buffer.duration;
+        if (duration <= 0) return;
+        const startPct = (player.loopStart / duration) * 100;
+        const endPct = (player.loopEnd / duration) * 100;
+        loopSegments[row].style.left = `${startPct}%`;
+        loopSegments[row].style.width = `${endPct - startPct}%`;
+    }
+
+    audioEngine.onParamChange = (update) => {
+        const { row, col } = update;
+        if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) {
+            squareLabels[row][col].textContent = formatParamValue(update);
+        }
+        if (update.label === 'loopStart' || update.label === 'loopLength') {
+            updateLoopBar(row);
+        }
+    };
+
     // --- Sample loading helpers ---
     async function loadArrayBuffer(arrayBuffer) {
         const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
         await audioEngine.loadAudioBuffer(audioBuffer);
         setStatus('Sample ready.');
         startBtn.disabled = false;
+    }
+
+    async function loadDefaultSample() {
+        try {
+            setStatus('Loading default sample…');
+            const response = await fetch('/440sample-trim.mp3');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const arrayBuffer = await response.arrayBuffer();
+            await loadArrayBuffer(arrayBuffer);
+        } catch (err) {
+            setStatus('Default sample not found. Record or drop a file.');
+        }
     }
 
     function setStatus(msg) {
@@ -123,10 +228,22 @@ document.addEventListener('DOMContentLoaded', () => {
         await loadArrayBuffer(arrayBuffer);
     });
 
+    // --- Mute toggle (m key) ---
+    document.addEventListener('keydown', (e) => {
+        if (e.key.toLowerCase() === 'm') {
+            audioEngine.toggleMute();
+        }
+    });
+    audioEngine.onMuteChange = (muted) => {
+        setStatus(muted ? 'MUTED' : '');
+    };
+
     // --- Start ---
     startBtn.addEventListener('click', async () => {
         await Tone.start();
         audioEngine.start();
         setupScreen.style.display = 'none';
     });
+
+    loadDefaultSample();
 });

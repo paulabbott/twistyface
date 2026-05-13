@@ -226,6 +226,35 @@
             padding: 14px 48px;
             letter-spacing: 0.2em;
         }
+
+        /* Debug overlay */
+        #debugOverlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 80vw;
+            height: 80vh;
+            transform: translate(-50%, -50%);
+            background: transparent;
+            border: none;
+            z-index: 9000;
+            pointer-events: none;
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-start;
+            box-sizing: border-box;
+            padding: 12px 16px;
+        }
+
+        #debugOverlay h2 {
+            margin: 0;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
     </style>
 </head>
 
@@ -261,9 +290,67 @@
         <canvas id="shaderOverlayCanvas" class="overlay"></canvas>
         <canvas id="rightHandCanvas" class="overlay hand-overlay"></canvas>
     </div>
+    <div id="debugOverlay">
+    </div>
     <div id="modeIndicator" class="mode-indicator">Cover Mode</div>
 
     <script>
+        function alignDebugOverlayToGrid() {
+            const debugOverlay = document.getElementById('debugOverlay');
+            const gridCanvas = document.getElementById('gridCanvas');
+            const shaderOverlayCanvas = document.getElementById('shaderOverlayCanvas');
+            if (!debugOverlay || !gridCanvas || !shaderOverlayCanvas) return;
+
+            // Align to whichever overlay is currently visible.
+            const gridRect = gridCanvas.getBoundingClientRect();
+            const shaderRect = shaderOverlayCanvas.getBoundingClientRect();
+            const activeCanvas = gridRect.width > 0 && gridRect.height > 0 ? gridCanvas : shaderOverlayCanvas;
+            const activeRect = activeCanvas.getBoundingClientRect();
+
+            // Keep this in sync with GridManager defaults.
+            const gridSize = 4;
+            const outerPadding = 100;
+            const padding = 1;
+
+            const canvasWidth = activeCanvas.width;
+            const canvasHeight = activeCanvas.height;
+            if (!canvasWidth || !canvasHeight) return;
+
+            const availableWidth = canvasWidth - (outerPadding * 2);
+            const availableHeight = canvasHeight - (outerPadding * 2);
+            const totalPadding = padding * (gridSize + 1);
+
+            const squareSize = Math.min(
+                (availableWidth - totalPadding) / gridSize,
+                (availableHeight - totalPadding) / gridSize
+            );
+
+            const totalGridWidth = (squareSize * gridSize) + (padding * (gridSize - 1));
+            const totalGridHeight = (squareSize * gridSize) + (padding * (gridSize - 1));
+
+            // Canvas drawing coordinates are in intrinsic pixels; convert to CSS pixels.
+            const scaleX = activeRect.width / canvasWidth;
+            const scaleY = activeRect.height / canvasHeight;
+            const gridWidthPx = totalGridWidth * scaleX;
+            const gridHeightPx = totalGridHeight * scaleY;
+            const gridX = outerPadding + ((availableWidth - totalGridWidth) / 2) + padding;
+            const gridY = outerPadding + ((availableHeight - totalGridHeight) / 2) + padding;
+
+            debugOverlay.style.left = `${activeRect.left + (gridX * scaleX)}px`;
+            debugOverlay.style.top = `${activeRect.top + (gridY * scaleY)}px`;
+            debugOverlay.style.width = `${gridWidthPx}px`;
+            debugOverlay.style.height = `${gridHeightPx}px`;
+            debugOverlay.style.transform = 'none';
+        }
+
+        window.addEventListener('load', () => {
+            alignDebugOverlayToGrid();
+            setTimeout(alignDebugOverlayToGrid, 250);
+            setTimeout(alignDebugOverlayToGrid, 1000);
+        });
+        window.addEventListener('resize', alignDebugOverlayToGrid);
+        setInterval(alignDebugOverlayToGrid, 250);
+
         document.addEventListener('keydown', (event) => {
             if (event.key.toLowerCase() === 'v') {
                 const videoContainer = document.getElementById('videoContainer');
@@ -277,9 +364,17 @@
                 modeIndicator.textContent = isContainMode ? 'Contain Mode' : 'Cover Mode';
                 modeIndicator.classList.add('visible');
 
+                setTimeout(alignDebugOverlayToGrid, 0);
+
                 setTimeout(() => {
                     modeIndicator.classList.remove('visible');
                 }, 2000);
+            } else if (event.key.toLowerCase() === 'd') {
+                const debugOverlay = document.getElementById('debugOverlay');
+                if (debugOverlay) {
+                    const isHidden = debugOverlay.style.display === 'none';
+                    debugOverlay.style.display = isHidden ? 'flex' : 'none';
+                }
             }
         });
     </script>
