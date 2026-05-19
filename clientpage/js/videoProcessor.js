@@ -48,9 +48,6 @@ export class VideoProcessor {
         // Start with left-side UI hidden (press 'h' to show)
         this.toggleLeftElements();
         if (RESET_ON_IDLE) this.startIdleTimer();
-        
-        // Send test data to Max when page loads
-        this.sendTestDataToMax();
     }
 
     setupKeyboardControls() {
@@ -71,8 +68,6 @@ export class VideoProcessor {
                 if (RESET_ON_IDLE) this.startIdleTimer(); // Restart idle timer after manual reset
             } else if (event.key === 'd') { // 'd' for debug data
                 this.debugRotationData();
-            } else if (event.key === 's') { // 's' for send digits test
-                this.sendDigitsToMax();
             }
             this.updateActivity(); // Update activity on any key press
         });
@@ -522,43 +517,6 @@ export class VideoProcessor {
     debugRotationData() {
         const rotationData = this.gridManager.exportRotationData();
         console.log('Rotation data:', rotationData);
-    }
-
-    // Max MSP Integration Methods
-    // Individual cell rotations are sent immediately when they change via gridManager.sendRotationToMax()
-    
-    sendTestDataToMax() {
-        const testData = {
-            type: 'test',
-            message: 'Page loaded successfully',
-            timestamp: Date.now(),
-            gridSize: this.gridSize
-        };
-
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', 'http://localhost:2112', true);
-        xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-        // Log the test payload before sending
-        console.log('Test payload:', testData);
-        xhr.send(JSON.stringify(testData));
-        
-        xhr.onerror = function() {
-            console.error('❌ Failed to send test data to Max - is the squiggle server running?');
-        };
-        
-        xhr.onload = function() {};
-    }
-
-    sendDigitsToMax() {
-        // Send hardcoded 16-digit array to squiggle server (for testing)
-        const digits = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
-
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', 'http://localhost:2112', true);
-        xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-        xhr.send(JSON.stringify(digits));
-        
-        xhr.onloadend = function() {};
     }
 
 } 

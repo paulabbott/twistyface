@@ -1,5 +1,13 @@
 # Twistyface
 
+**The current version runs completely in the browser.** Hand tracking, visuals, and audio (via Tone.js `GrainPlayer`) all run client-side—no Max/MSP or Node bridge required. Serve the repo with `npm start` (or `python3 -m http.server 8080` from the repo root) and open `http://localhost:8080/clientpage/`. Deploy to Railway or any static host with HTTPS so the webcam works.
+
+---
+
+## History
+
+The notes below describe the original Max/MSP-integrated architecture and behaviour.
+
 Hand gestures in the browser rotate grid squares, driving Max dials in real time.
 
 ![Demo](twistyface_demo.gif)

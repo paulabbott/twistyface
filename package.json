@@ -1,19 +1,13 @@
 {
-  "name": "n4m-squiggle",
+  "name": "twistyface",
   "version": "1.0.0",
-  "description": "Node for Max Squiggle Server",
-  "main": "n4m.squiggle.js",
-  "scripts": {},
-  "author": "Cycling '74",
-  "contributors": [
-    {
-      "name": "Darwin Grosse"
-    },
-    {
-      "name": "Andrew Benson"
-    }
-  ],
-  "license": "MIT",
-  "dependencies": {
-  }
+  "description": "Twistyface standalone web app",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
 }
