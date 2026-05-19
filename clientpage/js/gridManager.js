@@ -12,6 +12,7 @@ export class GridManager {
         this.squareSize = 0;
         this.padding = 1;
         this.outerPadding = 100;
+        this.showGridLines = true;
 
         // Grid state
         this.gridRotation = Array(gridSize).fill().map(() => Array(gridSize).fill(0));
@@ -55,9 +56,18 @@ export class GridManager {
         );
     }
 
+    toggleGridLines() {
+        this.showGridLines = !this.showGridLines;
+        this.drawGrid();
+        return this.showGridLines;
+    }
+
     drawGrid() {
         // Draw on left overlay
         this.ctx.clearRect(0, 0, this.gridCanvas.width, this.gridCanvas.height);
+        this.shaderCtx.clearRect(0, 0, this.shaderOverlayCanvas.width, this.shaderOverlayCanvas.height);
+        if (!this.showGridLines) return;
+
         this.ctx.globalAlpha = 0.25; // Set 25% opacity
 
         // Calculate total grid width and centering offsets
@@ -86,7 +96,6 @@ export class GridManager {
         this.ctx.globalAlpha = 1.0;
 
         // Draw on right overlay
-        this.shaderCtx.clearRect(0, 0, this.shaderOverlayCanvas.width, this.shaderOverlayCanvas.height);
         this.shaderCtx.globalAlpha = 0.25; // Set 25% opacity
 
         // Draw grid of squares on right overlay

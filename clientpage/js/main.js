@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const startBtn      = document.getElementById('startBtn');
     const recordTimer   = document.getElementById('recordTimer');
     const debugOverlay  = document.getElementById('debugOverlay');
+    const modeIndicator = document.getElementById('modeIndicator');
 
     // --- Video processor (camera starts immediately) ---
     const video               = document.getElementById('video');
@@ -228,10 +229,19 @@ document.addEventListener('DOMContentLoaded', () => {
         await loadArrayBuffer(arrayBuffer);
     });
 
-    // --- Mute toggle (m key) ---
+    // --- Keyboard shortcuts (m = mute, g = grid lines) ---
     document.addEventListener('keydown', (e) => {
-        if (e.key.toLowerCase() === 'm') {
+        if (e.target.closest('input, textarea')) return;
+        const key = e.key.toLowerCase();
+        if (key === 'm') {
             audioEngine.toggleMute();
+        } else if (key === 'g') {
+            const gridOn = videoProcessor.gridManager.toggleGridLines();
+            if (modeIndicator) {
+                modeIndicator.textContent = gridOn ? 'Grid on' : 'Grid off';
+                modeIndicator.classList.add('visible');
+                setTimeout(() => modeIndicator.classList.remove('visible'), 2000);
+            }
         }
     });
     audioEngine.onMuteChange = (muted) => {
