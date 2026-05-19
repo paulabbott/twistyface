@@ -209,21 +209,10 @@ export class GridManager {
                     // Update local tracker to reflect one message sent
                     this._prevStepCount[row][col] = (this._prevStepCount[row][col] || 0) + deltaStepsInt;
 
-                    const cellData = {
-                        row: row,
-                        col: colForMax,
-                        currentRotation: 0,
-                        cumulativeRotation: this.cumulativeRotation[row][col],
-                        timestamp: Date.now(),
-                        message: 'r' + row + ' c' + colForMax + ' 0',
-                        DeltaMsg: 'r' + row + ' c' + colForMax + ' ' + deltaStepsInt
-                    };
-
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('POST', 'http://localhost:2112', true);
-                    xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-                    xhr.send(JSON.stringify(cellData));
-                    try { console.log(`Sent: r${row} c${colForMax} steps=${deltaStepsInt}`); } catch (_) {}
+                    try { console.log(`Zero: r${row} c${colForMax} steps=${deltaStepsInt}`); } catch (_) {}
+                    if (typeof this.onStep === 'function') {
+                        this.onStep(row, colForMax, deltaStepsInt);
+                    }
 
                     this._zeroing.perRowRemaining[row] -= 1;
                     this._zeroing.nextSendAtMs[row] = now + this._zeroing.periodMs;
@@ -341,28 +330,12 @@ export class GridManager {
             return;
         }
 
-        const cellData = {
-            row: row,
-            col: colForMax,
-            currentRotation: this.gridRotation[row][col],
-            cumulativeRotation: this.cumulativeRotation[row][col],
-            timestamp: Date.now(),
-            message: 'r'+row+' c'+colForMax+' '+this.gridRotation[row][col],
-			DeltaMsg: 'r'+row+' c'+colForMax+' '+deltaStepsInt
-        };
-
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', 'http://localhost:2112', true);
-        xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-        
-        const payload = JSON.stringify(cellData);
-        xhr.send(payload);
         // Debug: concise send log
-        try { console.log(`Sent: r${row} c${colForMax} steps=${deltaStepsInt}`); } catch (e) {}
-        
-        xhr.onerror = function() {
-            console.error(`❌ Failed to send cell [${row},${col}] rotation to Max`);
-        };
+        try { console.log(`Step: r${row} c${colForMax} steps=${deltaStepsInt}`); } catch (e) {}
+
+        if (typeof this.onStep === 'function') {
+            this.onStep(row, colForMax, deltaStepsInt);
+        }
         // Update previous rotation after send
         this._prevRotation[row][col] = this.gridRotation[row][col];
 		// Update previous step count after send

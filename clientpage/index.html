@@ -12,6 +12,7 @@
     <script src="lib/mediapipe/hands/hands.js"></script>
     <script src="lib/mediapipe-hands-wrapper.js"></script>
     <script src="lib/hand-pose-detection.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tone@14.9.11/build/Tone.js"></script>
     <!-- External JavaScript -->
     <script type="module" src="js/webglContext.js"></script>
     <script type="module" src="js/handTracking.js"></script>
@@ -100,10 +101,156 @@
         .mode-indicator.visible {
             opacity: 1;
         }
+
+        /* Setup screen */
+        #setupScreen {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            font-family: Arial, sans-serif;
+            color: #fff;
+            gap: 32px;
+        }
+
+        #setupScreen h1 {
+            font-size: 2rem;
+            font-weight: 300;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin: 0;
+        }
+
+        #setupScreen p.subtitle {
+            color: #888;
+            margin: 0;
+            font-size: 0.9rem;
+            letter-spacing: 0.05em;
+        }
+
+        .setup-options {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
+
+        #dropZone {
+            border: 1px solid #444;
+            padding: 32px 40px;
+            cursor: pointer;
+            text-align: center;
+            color: #888;
+            font-size: 0.85rem;
+            transition: border-color 0.2s, color 0.2s;
+            min-width: 160px;
+        }
+
+        #dropZone:hover,
+        #dropZone.drag-over {
+            border-color: #fff;
+            color: #fff;
+        }
+
+        #dropZone span {
+            display: block;
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .divider {
+            color: #444;
+            align-self: center;
+            font-size: 0.8rem;
+        }
+
+        .record-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            min-width: 160px;
+        }
+
+        .btn {
+            background: none;
+            border: 1px solid #fff;
+            color: #fff;
+            padding: 10px 24px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            transition: background 0.2s, color 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: #fff;
+            color: #000;
+        }
+
+        .btn:disabled {
+            opacity: 0.3;
+            cursor: default;
+        }
+
+        .btn.stop {
+            border-color: #c00;
+            color: #c00;
+        }
+
+        .btn.stop:hover {
+            background: #c00;
+            color: #fff;
+        }
+
+        #recordTimer {
+            font-size: 1.2rem;
+            font-variant-numeric: tabular-nums;
+            min-height: 1.5rem;
+        }
+
+        #statusMsg {
+            color: #888;
+            font-size: 0.8rem;
+            min-height: 1.2rem;
+            letter-spacing: 0.05em;
+        }
+
+        #startBtn {
+            font-size: 1rem;
+            padding: 14px 48px;
+            letter-spacing: 0.2em;
+        }
     </style>
 </head>
 
 <body>
+    <!-- Setup screen: shown until user loads a sample and clicks Start -->
+    <div id="setupScreen">
+        <h1>Twistyface</h1>
+        <p class="subtitle">Load a sample to begin</p>
+        <div class="setup-options">
+            <div class="record-area">
+                <button class="btn" id="recordBtn">Record audio</button>
+                <button class="btn stop" id="stopBtn" style="display:none;">Stop</button>
+                <div id="recordTimer"></div>
+            </div>
+            <div class="divider">or</div>
+            <div id="dropZone">
+                <span>&#8681;</span>
+                Drop an audio file<br>or click to browse
+                <input type="file" id="fileInput" accept="audio/*" style="display:none;">
+            </div>
+        </div>
+        <div id="statusMsg"></div>
+        <button class="btn" id="startBtn" disabled>Start</button>
+    </div>
+
     <div id="videoContainer" class="container">
         <video id="video" autoplay playsinline></video>
         <canvas id="gridCanvas" class="overlay grid-overlay"></canvas>
@@ -122,17 +269,14 @@
                 const videoContainer = document.getElementById('videoContainer');
                 const shaderContainer = document.getElementById('shaderContainer');
                 const modeIndicator = document.getElementById('modeIndicator');
-                
-                // Toggle contain mode
+
                 videoContainer.classList.toggle('contain-mode');
                 shaderContainer.classList.toggle('contain-mode');
-                
-                // Update and show mode indicator
+
                 const isContainMode = videoContainer.classList.contains('contain-mode');
                 modeIndicator.textContent = isContainMode ? 'Contain Mode' : 'Cover Mode';
                 modeIndicator.classList.add('visible');
-                
-                // Hide indicator after 2 seconds
+
                 setTimeout(() => {
                     modeIndicator.classList.remove('visible');
                 }, 2000);
