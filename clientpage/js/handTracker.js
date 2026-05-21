@@ -23,12 +23,10 @@ const normalizePinch = (rawPinch, handSize) => {
 
 // Export the HandTracker class
 export class HandTracker {
-    constructor(videoElement, leftHandCanvas, rightHandCanvas) {
+    constructor(videoElement, handCanvas) {
         this.video = videoElement;
-        this.leftHandCanvas = leftHandCanvas;
-        this.rightHandCanvas = rightHandCanvas;
-        this.leftCtx = leftHandCanvas.getContext('2d');
-        this.rightCtx = rightHandCanvas.getContext('2d');
+        this.handCanvas = handCanvas;
+        this.ctx = handCanvas.getContext('2d');
         
         // Hand tracking properties
         this.detector = null;
@@ -60,14 +58,12 @@ export class HandTracker {
     }
 
     drawHands(hands) {
-        // Clear both canvases
-        this.leftCtx.clearRect(0, 0, this.leftHandCanvas.width, this.leftHandCanvas.height);
-        this.rightCtx.clearRect(0, 0, this.rightHandCanvas.width, this.rightHandCanvas.height);
+        this.ctx.clearRect(0, 0, this.handCanvas.width, this.handCanvas.height);
 
         if (!hands || hands.length === 0) return;
 
-        const sx = this.leftHandCanvas.width / OFF_W;
-        const sy = this.leftHandCanvas.height / OFF_H;
+        const sx = this.handCanvas.width / OFF_W;
+        const sy = this.handCanvas.height / OFF_H;
 
         hands.forEach((hand, handIndex) => {
             // Get thumb and index finger positions
@@ -85,42 +81,27 @@ export class HandTracker {
             const midX = (thumb.x + indexFinger.x) / 2;
             const midY = (thumb.y + indexFinger.y) / 2;
 
-            // Draw on both canvases
-            [this.leftCtx, this.rightCtx].forEach(ctx => {
-                // Draw line between thumb and index finger
-                ctx.beginPath();
-                ctx.moveTo(thumb.x * sx, thumb.y * sy);
-                ctx.lineTo(indexFinger.x * sx, indexFinger.y * sy);
-                ctx.strokeStyle = 'black';
-                ctx.lineWidth = 2;
-                ctx.stroke();
+            // Draw line between thumb and index finger
+            this.ctx.beginPath();
+            this.ctx.moveTo(thumb.x * sx, thumb.y * sy);
+            this.ctx.lineTo(indexFinger.x * sx, indexFinger.y * sy);
+            this.ctx.strokeStyle = 'black';
+            this.ctx.lineWidth = 2;
+            this.ctx.stroke();
 
-                // Draw circle with scaled threshold radius
-                ctx.beginPath();
-                ctx.arc(midX * sx, midY * sy, pinchThreshold * 1.5, 0, 2 * Math.PI);
-                ctx.strokeStyle = 'black';
-                ctx.lineWidth = 1;
-                ctx.stroke();
+            // Draw circle with scaled threshold radius
+            this.ctx.beginPath();
+            this.ctx.arc(midX * sx, midY * sy, pinchThreshold * 1.5, 0, 2 * Math.PI);
+            this.ctx.strokeStyle = 'black';
+            this.ctx.lineWidth = 1;
+            this.ctx.stroke();
 
-                // Draw dot at midpoint, yellow if pinching
-                const dotSize = 5; // Fixed size dot
-                ctx.beginPath();
-                ctx.arc(midX * sx, midY * sy, dotSize, 0, 2 * Math.PI);
-                ctx.fillStyle = this.pinchActive[handIndex] ? 'yellow' : 'black';
-                ctx.fill();
-            });
-
-            // Display raw values
-            this.leftCtx.fillStyle = 'black';
-            this.leftCtx.fillRect(5, 5, 400, 30); // Add black background
-            this.leftCtx.fillStyle = 'white';
-            this.leftCtx.font = '16px Arial';
-            if (handIndex === 0) { // Left hand
-                this.leftCtx.fillText(`handSize: ${Math.round(handSize)} | pinchDist: ${Math.round(pinchDist)} | normPinch: ${Math.round(normPinchDist)} | threshold: ${Math.round(pinchThreshold)}`, 10, 20);
-            } else if (handIndex === 1) { // Right hand
-                this.leftCtx.fillRect(this.leftHandCanvas.width - 405, 5, 400, 30); // Add black background
-                this.leftCtx.fillText(`handSize: ${Math.round(handSize)} | pinchDist: ${Math.round(pinchDist)} | normPinch: ${Math.round(normPinchDist)} | threshold: ${Math.round(pinchThreshold)}`, this.leftHandCanvas.width - 300, 20);
-            }
+            // Draw dot at midpoint, yellow if pinching
+            const dotSize = 5;
+            this.ctx.beginPath();
+            this.ctx.arc(midX * sx, midY * sy, dotSize, 0, 2 * Math.PI);
+            this.ctx.fillStyle = this.pinchActive[handIndex] ? 'yellow' : 'black';
+            this.ctx.fill();
         });
     }
 
@@ -219,8 +200,8 @@ export class HandTracker {
             if (!hand || !hand.keypoints) return null;
             const thumb = hand.keypoints[4];
             const indexFinger = hand.keypoints[8];
-            const sx = this.leftHandCanvas.width / OFF_W;
-            const sy = this.leftHandCanvas.height / OFF_H;
+            const sx = this.handCanvas.width / OFF_W;
+            const sy = this.handCanvas.height / OFF_H;
             return {
                 thumb: { x: thumb.x * sx, y: thumb.y * sy },
                 indexFinger: { x: indexFinger.x * sx, y: indexFinger.y * sy },

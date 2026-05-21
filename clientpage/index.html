@@ -33,7 +33,7 @@
 
         .container {
             position: relative;
-            width: 50%;
+            width: 100%;
             height: 100vh;
             overflow: hidden;
             display: flex;
@@ -76,7 +76,7 @@
         }
 
         #video {
-            transform: translate(-50%, -50%) scaleX(-1);
+            display: none;
         }
 
         #shaderOverlayCanvas {
@@ -102,129 +102,119 @@
             opacity: 1;
         }
 
-        /* Setup screen */
-        #setupScreen {
+        /* Intro overlay (aligned to grid; see alignGridOverlays) */
+        #introOverlay {
             position: fixed;
-            inset: 0;
-            background: #000;
+            z-index: 9100;
+            pointer-events: auto;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: center;
-            z-index: 9999;
+            align-items: stretch;
+            gap: 8px;
+            padding: 12px;
+            box-sizing: border-box;
+            background: rgba(0, 0, 0, 0.82);
             font-family: Arial, sans-serif;
             color: #fff;
-            gap: 32px;
+            overflow: hidden;
+            text-align: center;
         }
 
-        #setupScreen h1 {
-            font-size: 2rem;
+        #introOverlay h1 {
+            font-size: 1.1rem;
             font-weight: 300;
             letter-spacing: 0.2em;
             text-transform: uppercase;
             margin: 0;
+            flex-shrink: 0;
         }
 
-        #setupScreen p.subtitle {
-            color: #888;
+        #introOverlay p.intro-text,
+        #introOverlay p.subtitle {
+            color: #aaa;
             margin: 0;
-            font-size: 0.9rem;
-            letter-spacing: 0.05em;
+            font-size: 0.65rem;
+            letter-spacing: 0.04em;
+            line-height: 1.35;
+            flex-shrink: 0;
         }
 
-        .setup-options {
-            display: flex;
-            gap: 24px;
-            align-items: flex-start;
-        }
-
-        #dropZone {
-            border: 1px solid #444;
-            padding: 32px 40px;
-            cursor: pointer;
-            text-align: center;
-            color: #888;
-            font-size: 0.85rem;
-            transition: border-color 0.2s, color 0.2s;
-            min-width: 160px;
-        }
-
-        #dropZone:hover,
-        #dropZone.drag-over {
-            border-color: #fff;
-            color: #fff;
-        }
-
-        #dropZone span {
-            display: block;
-            font-size: 1.5rem;
-            margin-bottom: 8px;
-        }
-
-        .divider {
-            color: #444;
+        #introOverlay p.intro-text {
+            max-width: 28em;
             align-self: center;
-            font-size: 0.8rem;
         }
 
-        .record-area {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            min-width: 160px;
-        }
-
-        .btn {
-            background: none;
-            border: 1px solid #fff;
-            color: #fff;
-            padding: 10px 24px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            transition: background 0.2s, color 0.2s;
+        .sample-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: 1fr;
+            gap: 8px;
+            flex: 1;
+            min-height: 0;
             width: 100%;
         }
 
-        .btn:hover:not(:disabled) {
+        .sample-box {
+            margin: 0;
+            padding: 8px;
+            border: 1px solid #fff;
+            background: transparent;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            transition: background 0.2s, color 0.2s, border-color 0.2s;
+            min-height: 0;
+        }
+
+        .sample-box:hover:not(:disabled) {
             background: #fff;
             color: #000;
         }
 
-        .btn:disabled {
-            opacity: 0.3;
+        .sample-box:disabled {
+            opacity: 0.35;
             cursor: default;
         }
 
-        .btn.stop {
+        .sample-box.active {
+            background: #ffff00;
+            color: #000;
+            border-color: #ffff00;
+        }
+
+        .sample-box.recording {
             border-color: #c00;
             color: #c00;
         }
 
-        .btn.stop:hover {
+        .sample-box.recording:hover {
             background: #c00;
             color: #fff;
         }
 
         #recordTimer {
-            font-size: 1.2rem;
+            font-size: 0.75rem;
             font-variant-numeric: tabular-nums;
-            min-height: 1.5rem;
+            text-align: center;
+            min-height: 1rem;
+            color: #c00;
         }
 
         #statusMsg {
             color: #888;
-            font-size: 0.8rem;
-            min-height: 1.2rem;
+            font-size: 0.65rem;
+            min-height: 0.9rem;
             letter-spacing: 0.05em;
-        }
-
-        #startBtn {
-            font-size: 1rem;
-            padding: 14px 48px;
-            letter-spacing: 0.2em;
+            text-align: center;
         }
 
         /* Debug overlay */
@@ -255,65 +245,136 @@
             letter-spacing: 0.08em;
             text-transform: uppercase;
         }
+
+        /* Help overlay (aligned to grid; see alignGridOverlays) */
+        #helpOverlay {
+            position: fixed;
+            z-index: 9500;
+            display: none;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: stretch;
+            gap: 8px;
+            padding: 12px;
+            box-sizing: border-box;
+            background: rgba(0, 0, 0, 0.82);
+            pointer-events: auto;
+            font-family: Arial, sans-serif;
+            color: #fff;
+            overflow: auto;
+            text-align: left;
+        }
+
+        #helpOverlay.visible {
+            display: flex;
+        }
+
+        #helpOverlay h2 {
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+
+        #helpOverlay table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.65rem;
+            flex: 1;
+            min-height: 0;
+        }
+
+        #helpOverlay th,
+        #helpOverlay td {
+            text-align: left;
+            padding: 4px 8px 4px 0;
+            vertical-align: top;
+            border-bottom: 1px solid #333;
+            line-height: 1.35;
+        }
+
+        #helpOverlay th {
+            color: #888;
+            font-weight: 600;
+            width: 2.5rem;
+            letter-spacing: 0.05em;
+        }
+
+        #helpOverlay tr:last-child th,
+        #helpOverlay tr:last-child td {
+            border-bottom: none;
+        }
+
+        #helpOverlay .help-hint {
+            margin: 0;
+            color: #888;
+            font-size: 0.65rem;
+            letter-spacing: 0.04em;
+            flex-shrink: 0;
+        }
     </style>
 </head>
 
 <body>
-    <!-- Setup screen: shown until user loads a sample and clicks Start -->
-    <div id="setupScreen">
-        <h1>Twistyface</h1>
+    <div id="introOverlay">
+        <h1>Personal Transformation Matrix</h1>
+        <p class="intro-text">This is a vocal slicer that you control by twisting the parameters using pinch gestures. Pinch with your left hand to decrease the values, pinch with your right hand to increase the values.</p>
         <p class="subtitle">Load a sample to begin</p>
-        <div class="setup-options">
-            <div class="record-area">
-                <button class="btn" id="recordBtn">Record audio</button>
-                <button class="btn stop" id="stopBtn" style="display:none;">Stop</button>
-                <div id="recordTimer"></div>
-            </div>
-            <div class="divider">or</div>
-            <div id="dropZone">
-                <span>&#8681;</span>
-                Drop an audio file<br>or click to browse
-                <input type="file" id="fileInput" accept="audio/*" style="display:none;">
-            </div>
+        <div class="sample-grid">
+            <button type="button" class="sample-box" id="recordBtn">Record</button>
+            <button type="button" class="sample-box" id="uploadBtn">Upload</button>
+            <button type="button" class="sample-box" id="sample1Btn">Sample1</button>
+            <button type="button" class="sample-box" id="sample2Btn">Sample2</button>
+            <button type="button" class="sample-box" id="sample3Btn">Sample3</button>
         </div>
+        <div id="recordTimer"></div>
         <div id="statusMsg"></div>
-        <button class="btn" id="startBtn" disabled>Start</button>
+        <input type="file" id="fileInput" accept="audio/*" hidden>
     </div>
 
-    <div id="videoContainer" class="container">
-        <video id="video" autoplay playsinline></video>
-        <canvas id="gridCanvas" class="overlay grid-overlay"></canvas>
-        <canvas id="handCanvas" class="overlay hand-overlay"></canvas>
-    </div>
     <div id="shaderContainer" class="container">
+        <video id="video" autoplay playsinline></video>
         <canvas id="canvas"></canvas>
         <canvas id="shaderOverlayCanvas" class="overlay"></canvas>
-        <canvas id="rightHandCanvas" class="overlay hand-overlay"></canvas>
+        <canvas id="handCanvas" class="overlay hand-overlay"></canvas>
     </div>
-    <div id="debugOverlay">
+    <div id="debugOverlay" style="display: none;"></div>
+    <div id="helpOverlay" aria-hidden="true">
+        <h2>Keyboard shortcuts</h2>
+        <table>
+            <tbody>
+                <tr><th>R</th><td>Show or hide sample panel (starts playback when you close it)</td></tr>
+                <tr><th>M</th><td>Mute / unmute all audio</td></tr>
+                <tr><th>G</th><td>Toggle grid lines</td></tr>
+                <tr><th>Z</th><td>Reset grid rotations</td></tr>
+                <tr><th>V</th><td>Toggle video cover / contain mode</td></tr>
+                <tr><th>D</th><td>Toggle debug overlay (parameter values)</td></tr>
+                <tr><th>H</th><td>Show or hide this help</td></tr>
+            </tbody>
+        </table>
+        <p class="help-hint">Left-hand pinch decreases values; right-hand pinch increases. Press H or Esc to close help.</p>
     </div>
     <div id="modeIndicator" class="mode-indicator">Cover Mode</div>
 
     <script>
-        function alignDebugOverlayToGrid() {
+        function alignGridOverlays() {
             const debugOverlay = document.getElementById('debugOverlay');
-            const gridCanvas = document.getElementById('gridCanvas');
+            const introOverlay = document.getElementById('introOverlay');
+            const helpOverlay = document.getElementById('helpOverlay');
             const shaderOverlayCanvas = document.getElementById('shaderOverlayCanvas');
-            if (!debugOverlay || !gridCanvas || !shaderOverlayCanvas) return;
+            if (!shaderOverlayCanvas) return;
 
-            // Align to whichever overlay is currently visible.
-            const gridRect = gridCanvas.getBoundingClientRect();
-            const shaderRect = shaderOverlayCanvas.getBoundingClientRect();
-            const activeCanvas = gridRect.width > 0 && gridRect.height > 0 ? gridCanvas : shaderOverlayCanvas;
-            const activeRect = activeCanvas.getBoundingClientRect();
+            const activeRect = shaderOverlayCanvas.getBoundingClientRect();
 
             // Keep this in sync with GridManager defaults.
             const gridSize = 4;
             const outerPadding = 100;
             const padding = 1;
 
-            const canvasWidth = activeCanvas.width;
-            const canvasHeight = activeCanvas.height;
+            const canvasWidth = shaderOverlayCanvas.width;
+            const canvasHeight = shaderOverlayCanvas.height;
             if (!canvasWidth || !canvasHeight) return;
 
             const availableWidth = canvasWidth - (outerPadding * 2);
@@ -336,35 +397,41 @@
             const gridX = outerPadding + ((availableWidth - totalGridWidth) / 2) + padding;
             const gridY = outerPadding + ((availableHeight - totalGridHeight) / 2) + padding;
 
-            debugOverlay.style.left = `${activeRect.left + (gridX * scaleX)}px`;
-            debugOverlay.style.top = `${activeRect.top + (gridY * scaleY)}px`;
-            debugOverlay.style.width = `${gridWidthPx}px`;
-            debugOverlay.style.height = `${gridHeightPx}px`;
-            debugOverlay.style.transform = 'none';
+            const left = `${activeRect.left + (gridX * scaleX)}px`;
+            const top = `${activeRect.top + (gridY * scaleY)}px`;
+            const width = `${gridWidthPx}px`;
+            const height = `${gridHeightPx}px`;
+
+            [debugOverlay, introOverlay, helpOverlay].forEach((el) => {
+                if (!el) return;
+                el.style.left = left;
+                el.style.top = top;
+                el.style.width = width;
+                el.style.height = height;
+                el.style.transform = 'none';
+            });
         }
 
         window.addEventListener('load', () => {
-            alignDebugOverlayToGrid();
-            setTimeout(alignDebugOverlayToGrid, 250);
-            setTimeout(alignDebugOverlayToGrid, 1000);
+            alignGridOverlays();
+            setTimeout(alignGridOverlays, 250);
+            setTimeout(alignGridOverlays, 1000);
         });
-        window.addEventListener('resize', alignDebugOverlayToGrid);
-        setInterval(alignDebugOverlayToGrid, 250);
+        window.addEventListener('resize', alignGridOverlays);
+        setInterval(alignGridOverlays, 250);
 
         document.addEventListener('keydown', (event) => {
             if (event.key.toLowerCase() === 'v') {
-                const videoContainer = document.getElementById('videoContainer');
                 const shaderContainer = document.getElementById('shaderContainer');
                 const modeIndicator = document.getElementById('modeIndicator');
 
-                videoContainer.classList.toggle('contain-mode');
                 shaderContainer.classList.toggle('contain-mode');
 
-                const isContainMode = videoContainer.classList.contains('contain-mode');
+                const isContainMode = shaderContainer.classList.contains('contain-mode');
                 modeIndicator.textContent = isContainMode ? 'Contain Mode' : 'Cover Mode';
                 modeIndicator.classList.add('visible');
 
-                setTimeout(alignDebugOverlayToGrid, 0);
+                setTimeout(alignGridOverlays, 0);
 
                 setTimeout(() => {
                     modeIndicator.classList.remove('visible');
