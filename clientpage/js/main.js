@@ -3,33 +3,44 @@ import { AudioEngine } from './audioEngine.js';
 
 const GRID_SIZE = 4;
 
+// Built-in samples (add files at these paths in the repo root / samples/)
+const SAMPLE_PRESETS = {
+    sample1: '/440sample-trim.mp3',
+    sample2: '/samples/sample2.mp3',
+    sample3: '/samples/sample3.mp3',
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     const audioEngine = new AudioEngine();
     const audioCtx = new AudioContext();
 
     // --- DOM refs ---
-    const setupScreen   = document.getElementById('setupScreen');
+    const introOverlay  = document.getElementById('introOverlay');
     const recordBtn     = document.getElementById('recordBtn');
-    const stopBtn       = document.getElementById('stopBtn');
-    const dropZone      = document.getElementById('dropZone');
+    const uploadBtn     = document.getElementById('uploadBtn');
     const fileInput     = document.getElementById('fileInput');
     const statusMsg     = document.getElementById('statusMsg');
-    const startBtn      = document.getElementById('startBtn');
     const recordTimer   = document.getElementById('recordTimer');
     const debugOverlay  = document.getElementById('debugOverlay');
     const modeIndicator = document.getElementById('modeIndicator');
+    const helpOverlay   = document.getElementById('helpOverlay');
+    const sampleButtons = {
+        sample1: document.getElementById('sample1Btn'),
+        sample2: document.getElementById('sample2Btn'),
+        sample3: document.getElementById('sample3Btn'),
+    };
+
+    let sampleReady = false;
+    let activeSampleKey = null;
 
     // --- Video processor (camera starts immediately) ---
     const video               = document.getElementById('video');
-    const gridCanvas          = document.getElementById('gridCanvas');
-    const handCanvas          = document.getElementById('handCanvas');
     const canvas              = document.getElementById('canvas');
     const shaderOverlayCanvas = document.getElementById('shaderOverlayCanvas');
-    const rightHandCanvas     = document.getElementById('rightHandCanvas');
+    const handCanvas          = document.getElementById('handCanvas');
 
     const videoProcessor = new VideoProcessor(
-        video, gridCanvas, handCanvas, canvas,
-        shaderOverlayCanvas, rightHandCanvas, GRID_SIZE
+        video, canvas, shaderOverlayCanvas, handCanvas, GRID_SIZE
     );
     videoProcessor.gridManager.onStep = (row, col, delta) => audioEngine.onStep(row, col, delta);
 
@@ -124,29 +135,45 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- Sample loading helpers ---
-    async function loadArrayBuffer(arrayBuffer) {
-        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-        await audioEngine.loadAudioBuffer(audioBuffer);
-        setStatus('Sample ready.');
-        startBtn.disabled = false;
+    function setActiveSampleButton(key) {
+        Object.entries(sampleButtons).forEach(([k, btn]) => {
+            if (btn) btn.classList.toggle('active', k === key);
+        });
+        activeSampleKey = key;
     }
 
-    async function loadDefaultSample() {
+    async function loadArrayBuffer(arrayBuffer, label = 'Sample') {
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        await audioEngine.loadAudioBuffer(audioBuffer);
+        sampleReady = true;
+        setStatus(`${label} ready. Press R to close panel.`);
+    }
+
+    async function loadSamplePreset(key) {
+        const url = SAMPLE_PRESETS[key];
+        if (!url) return;
+        setStatus(`Loading ${key}…`);
         try {
-            setStatus('Loading default sample…');
-            const response = await fetch('/440sample-trim.mp3');
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const arrayBuffer = await response.arrayBuffer();
-            await loadArrayBuffer(arrayBuffer);
+            await loadArrayBuffer(arrayBuffer, key);
+            setActiveSampleButton(key);
         } catch (err) {
-            setStatus('Default sample not found. Record or drop a file.');
+            setStatus(`${key} not found (${url}).`);
         }
     }
 
     function setStatus(msg) {
         statusMsg.textContent = msg;
+    }
+
+    async function beginSession() {
+        if (!sampleReady) return;
+        await Tone.start();
+        if (!audioEngine.started) audioEngine.start();
+        if (introOverlay) introOverlay.style.display = 'none';
+        if (debugOverlay) debugOverlay.style.display = 'flex';
     }
 
     // --- Recording ---
@@ -157,6 +184,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const MAX_RECORD_SEC = 30;
 
     recordBtn.addEventListener('click', async () => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            stopRecording();
+            return;
+        }
+
         let stream;
         try {
             stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -172,15 +204,20 @@ document.addEventListener('DOMContentLoaded', () => {
             stream.getTracks().forEach(t => t.stop());
             clearInterval(timerInterval);
             recordTimer.textContent = '';
+            recordBtn.textContent = 'Record';
+            recordBtn.classList.remove('recording');
+            setActiveSampleButton(null);
             setStatus('Processing recording…');
             const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
             const arrayBuffer = await blob.arrayBuffer();
-            await loadArrayBuffer(arrayBuffer);
+            await loadArrayBuffer(arrayBuffer, 'Recording');
         };
 
         mediaRecorder.start();
         elapsedSec = 0;
         recordTimer.textContent = '0:00';
+        recordBtn.textContent = 'Stop';
+        recordBtn.classList.add('recording');
         timerInterval = setInterval(() => {
             elapsedSec++;
             const m = Math.floor(elapsedSec / 60);
@@ -188,9 +225,6 @@ document.addEventListener('DOMContentLoaded', () => {
             recordTimer.textContent = `${m}:${s}`;
             if (elapsedSec >= MAX_RECORD_SEC) stopRecording();
         }, 1000);
-
-        recordBtn.style.display = 'none';
-        stopBtn.style.display = 'inline-block';
         setStatus('Recording… (max 30s)');
     });
 
@@ -198,41 +232,45 @@ document.addEventListener('DOMContentLoaded', () => {
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
             mediaRecorder.stop();
         }
-        stopBtn.style.display = 'none';
-        recordBtn.style.display = 'inline-block';
     }
 
-    stopBtn.addEventListener('click', stopRecording);
-
-    // --- File drop ---
-    dropZone.addEventListener('dragover', e => {
-        e.preventDefault();
-        dropZone.classList.add('drag-over');
-    });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-    dropZone.addEventListener('drop', async e => {
-        e.preventDefault();
-        dropZone.classList.remove('drag-over');
-        const file = e.dataTransfer.files[0];
-        if (!file) return;
-        setStatus(`Loading ${file.name}…`);
-        const arrayBuffer = await file.arrayBuffer();
-        await loadArrayBuffer(arrayBuffer);
-    });
-
-    dropZone.addEventListener('click', () => fileInput.click());
+    uploadBtn.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', async () => {
         const file = fileInput.files[0];
         if (!file) return;
         setStatus(`Loading ${file.name}…`);
         const arrayBuffer = await file.arrayBuffer();
-        await loadArrayBuffer(arrayBuffer);
+        await loadArrayBuffer(arrayBuffer, file.name);
+        setActiveSampleButton(null);
+        fileInput.value = '';
     });
 
-    // --- Keyboard shortcuts (m = mute, g = grid lines) ---
-    document.addEventListener('keydown', (e) => {
+    Object.entries(sampleButtons).forEach(([key, btn]) => {
+        btn?.addEventListener('click', () => loadSamplePreset(key));
+    });
+
+    function toggleHelpOverlay() {
+        if (!helpOverlay) return;
+        const show = !helpOverlay.classList.contains('visible');
+        helpOverlay.classList.toggle('visible', show);
+        helpOverlay.setAttribute('aria-hidden', show ? 'false' : 'true');
+    }
+
+    // --- Keyboard shortcuts ---
+    document.addEventListener('keydown', async (e) => {
         if (e.target.closest('input, textarea')) return;
         const key = e.key.toLowerCase();
+        if (key === 'escape') {
+            if (helpOverlay?.classList.contains('visible')) {
+                helpOverlay.classList.remove('visible');
+                helpOverlay.setAttribute('aria-hidden', 'true');
+            }
+            return;
+        }
+        if (key === 'h') {
+            toggleHelpOverlay();
+            return;
+        }
         if (key === 'm') {
             audioEngine.toggleMute();
         } else if (key === 'g') {
@@ -242,18 +280,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 modeIndicator.classList.add('visible');
                 setTimeout(() => modeIndicator.classList.remove('visible'), 2000);
             }
+        } else if (key === 'r') {
+            if (!introOverlay) return;
+            const hidden = introOverlay.style.display === 'none';
+            if (hidden) {
+                introOverlay.style.display = 'flex';
+                if (modeIndicator) {
+                    modeIndicator.textContent = 'Record panel on';
+                    modeIndicator.classList.add('visible');
+                    setTimeout(() => modeIndicator.classList.remove('visible'), 2000);
+                }
+            } else {
+                await beginSession();
+                if (modeIndicator) {
+                    modeIndicator.textContent = 'Record panel off';
+                    modeIndicator.classList.add('visible');
+                    setTimeout(() => modeIndicator.classList.remove('visible'), 2000);
+                }
+            }
         }
     });
     audioEngine.onMuteChange = (muted) => {
         setStatus(muted ? 'MUTED' : '');
     };
 
-    // --- Start ---
-    startBtn.addEventListener('click', async () => {
-        await Tone.start();
-        audioEngine.start();
-        setupScreen.style.display = 'none';
-    });
-
-    loadDefaultSample();
+    loadSamplePreset('sample1');
 });

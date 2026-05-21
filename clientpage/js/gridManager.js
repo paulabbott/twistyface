@@ -2,17 +2,14 @@
 const EPSILON = 0.01;
 
 export class GridManager {
-    constructor(gridCanvas, shaderOverlayCanvas, gridSize = 8) {
-        
-        this.gridCanvas = gridCanvas;
-        this.shaderOverlayCanvas = shaderOverlayCanvas;
-        this.ctx = gridCanvas.getContext('2d');
-        this.shaderCtx = shaderOverlayCanvas.getContext('2d');
+    constructor(overlayCanvas, gridSize = 8) {
+        this.overlayCanvas = overlayCanvas;
+        this.ctx = overlayCanvas.getContext('2d');
         this.gridSize = gridSize;
         this.squareSize = 0;
         this.padding = 1;
         this.outerPadding = 100;
-        this.showGridLines = true;
+        this.showGridLines = false;
 
         // Grid state
         this.gridRotation = Array(gridSize).fill().map(() => Array(gridSize).fill(0));
@@ -43,8 +40,8 @@ export class GridManager {
 
     updateCanvasSizes() {
         // Calculate available space after outer padding
-        const availableWidth = this.gridCanvas.width - (this.outerPadding * 2);
-        const availableHeight = this.gridCanvas.height - (this.outerPadding * 2);
+        const availableWidth = this.overlayCanvas.width - (this.outerPadding * 2);
+        const availableHeight = this.overlayCanvas.height - (this.outerPadding * 2);
         
         // Calculate square size based on grid with inner padding
         const totalPadding = this.padding * (this.gridSize + 1);
@@ -63,27 +60,21 @@ export class GridManager {
     }
 
     drawGrid() {
-        // Draw on left overlay
-        this.ctx.clearRect(0, 0, this.gridCanvas.width, this.gridCanvas.height);
-        this.shaderCtx.clearRect(0, 0, this.shaderOverlayCanvas.width, this.shaderOverlayCanvas.height);
+        this.ctx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
         if (!this.showGridLines) return;
 
-        this.ctx.globalAlpha = 0.25; // Set 25% opacity
+        this.ctx.globalAlpha = 0.25;
 
-        // Calculate total grid width and centering offsets
         const totalGridWidth = (this.squareSize * this.gridSize) + (this.padding * (this.gridSize - 1));
         const totalGridHeight = (this.squareSize * this.gridSize) + (this.padding * (this.gridSize - 1));
-        const availableWidth = this.gridCanvas.width - (this.outerPadding * 2);
-        const availableHeight = this.gridCanvas.height - (this.outerPadding * 2);
+        const availableWidth = this.overlayCanvas.width - (this.outerPadding * 2);
+        const availableHeight = this.overlayCanvas.height - (this.outerPadding * 2);
         const horizontalOffset = this.outerPadding + (availableWidth - totalGridWidth) / 2;
         const verticalOffset = this.outerPadding + (availableHeight - totalGridHeight) / 2;
 
-        // Draw grid of squares on left overlay
         for (let row = 0; row < this.gridSize; row++) {
             for (let col = 0; col < this.gridSize; col++) {
-                // Mirror the x coordinate
-                const mirroredCol = this.gridSize - 1 - col;
-                const x = horizontalOffset + this.padding + mirroredCol * (this.squareSize + this.padding);
+                const x = horizontalOffset + this.padding + col * (this.squareSize + this.padding);
                 const y = verticalOffset + this.padding + row * (this.squareSize + this.padding);
 
                 this.ctx.strokeStyle = 'white';
@@ -92,33 +83,14 @@ export class GridManager {
             }
         }
 
-        // Reset opacity
         this.ctx.globalAlpha = 1.0;
-
-        // Draw on right overlay
-        this.shaderCtx.globalAlpha = 0.25; // Set 25% opacity
-
-        // Draw grid of squares on right overlay
-        for (let row = 0; row < this.gridSize; row++) {
-            for (let col = 0; col < this.gridSize; col++) {
-                const x = horizontalOffset + this.padding + col * (this.squareSize + this.padding);
-                const y = verticalOffset + this.padding + row * (this.squareSize + this.padding);
-
-                this.shaderCtx.strokeStyle = 'white';
-                this.shaderCtx.lineWidth = 1;
-                this.shaderCtx.strokeRect(x, y, this.squareSize, this.squareSize);
-            }
-        }
-
-        // Reset opacity
-        this.shaderCtx.globalAlpha = 1.0;
     }
 
     getGridCellIndex(x, y) {
         const totalGridWidth = (this.squareSize * this.gridSize) + (this.padding * (this.gridSize - 1));
         const totalGridHeight = (this.squareSize * this.gridSize) + (this.padding * (this.gridSize - 1));
-        const availableWidth = this.gridCanvas.width - (this.outerPadding * 2);
-        const availableHeight = this.gridCanvas.height - (this.outerPadding * 2);
+        const availableWidth = this.overlayCanvas.width - (this.outerPadding * 2);
+        const availableHeight = this.overlayCanvas.height - (this.outerPadding * 2);
         const horizontalOffset = this.outerPadding + (availableWidth - totalGridWidth) / 2;
         const verticalOffset = this.outerPadding + (availableHeight - totalGridHeight) / 2;
 
@@ -261,17 +233,17 @@ export class GridManager {
         // Calculate total grid width and centering offsets
         const totalGridWidth = (this.squareSize * this.gridSize) + (this.padding * (this.gridSize - 1));
         const totalGridHeight = (this.squareSize * this.gridSize) + (this.padding * (this.gridSize - 1));
-        const availableWidth = this.gridCanvas.width - (this.outerPadding * 2);
-        const availableHeight = this.gridCanvas.height - (this.outerPadding * 2);
+        const availableWidth = this.overlayCanvas.width - (this.outerPadding * 2);
+        const availableHeight = this.overlayCanvas.height - (this.outerPadding * 2);
         const horizontalOffset = this.outerPadding + (availableWidth - totalGridWidth) / 2;
         const verticalOffset = this.outerPadding + (availableHeight - totalGridHeight) / 2;
 
         for (let row = 0; row < this.gridSize; row++) {
             for (let col = 0; col < this.gridSize; col++) {
-                const x = (horizontalOffset + this.padding + col * (this.squareSize + this.padding)) / this.gridCanvas.width;
-                const y = (verticalOffset + this.padding + row * (this.squareSize + this.padding)) / this.gridCanvas.height;
-                const width = this.squareSize / this.gridCanvas.width;
-                const height = this.squareSize / this.gridCanvas.height;
+                const x = (horizontalOffset + this.padding + col * (this.squareSize + this.padding)) / this.overlayCanvas.width;
+                const y = (verticalOffset + this.padding + row * (this.squareSize + this.padding)) / this.overlayCanvas.height;
+                const width = this.squareSize / this.overlayCanvas.width;
+                const height = this.squareSize / this.overlayCanvas.height;
 
                 squarePositions.push(x, y);
                 squareSizes.push(width, height);

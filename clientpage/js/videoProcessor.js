@@ -7,25 +7,16 @@ import { GridManager } from './gridManager.js';
 const RESET_ON_IDLE = false;
 
 export class VideoProcessor {
-    constructor(videoElement, gridCanvas, handCanvas, shaderCanvas, shaderOverlayCanvas, rightHandCanvas, gridSize = 4) {
+    constructor(videoElement, shaderCanvas, shaderOverlayCanvas, handCanvas, gridSize = 4) {
         this.video = videoElement;
-        this.gridCanvas = gridCanvas;
-        this.handCanvas = handCanvas;
         this.shaderCanvas = shaderCanvas;
         this.shaderOverlayCanvas = shaderOverlayCanvas;
-        this.rightHandCanvas = rightHandCanvas;
+        this.handCanvas = handCanvas;
         this.gridSize = gridSize;
         this.glContext = new WebGLContext(shaderCanvas);
-        this.ctx = gridCanvas.getContext('2d');
-        this.shaderCtx = shaderOverlayCanvas.getContext('2d');
 
-        // Initialize managers
-        this.handTracker = new HandTracker(videoElement, handCanvas, rightHandCanvas);
-        this.gridManager = new GridManager(gridCanvas, shaderOverlayCanvas, gridSize);
-
-
-        // Track visibility state
-        this.leftElementsVisible = true;
+        this.handTracker = new HandTracker(videoElement, handCanvas);
+        this.gridManager = new GridManager(shaderOverlayCanvas, gridSize);
 
         // Idle timer properties
         this.lastActivityTime = Date.now();
@@ -45,16 +36,12 @@ export class VideoProcessor {
 
         this.setup();
         this.setupKeyboardControls();
-        // Start with left-side UI hidden (press 'h' to show)
-        this.toggleLeftElements();
         if (RESET_ON_IDLE) this.startIdleTimer();
     }
 
     setupKeyboardControls() {
         document.addEventListener('keydown', (event) => {
-            if (event.key === 'h') { // 'h' for hide
-                this.toggleLeftElements();
-            } else if (event.key === 'r') { // 'r' for reset
+            if (event.key === 'z') { // 'z' for reset
                 // Cancel any ongoing zeroing out process
                 this.isZeroingOut = false;
                 if (this._zeroOutInterval) {
@@ -71,38 +58,6 @@ export class VideoProcessor {
             }
             this.updateActivity(); // Update activity on any key press
         });
-    }
-
-    toggleLeftElements() {
-        this.leftElementsVisible = !this.leftElementsVisible;
-        
-        // Get the containers
-        const videoContainer = document.getElementById('videoContainer');
-        const shaderContainer = document.getElementById('shaderContainer');
-        
-        // Toggle visibility of left-hand elements
-        this.video.style.display = this.leftElementsVisible ? 'block' : 'none';
-        this.gridCanvas.style.display = this.leftElementsVisible ? 'block' : 'none';
-        this.handCanvas.style.display = this.leftElementsVisible ? 'block' : 'none';
-        
-        // Adjust container widths
-        if (this.leftElementsVisible) {
-            videoContainer.style.width = '50%';
-            shaderContainer.style.width = '50%';
-        } else {
-            videoContainer.style.width = '0%';
-            shaderContainer.style.width = '100%';
-        }
-        
-        // If left elements are hidden, we should still process the video for the right side
-        if (!this.leftElementsVisible) {
-            this.video.style.opacity = '0'; // Make video invisible but still processing
-        } else {
-            this.video.style.opacity = '1';
-        }
-
-        // Update canvas sizes after container resize
-        this.updateCanvasSizes();
     }
 
     async setup() {
@@ -313,16 +268,12 @@ export class VideoProcessor {
             videoHeight = videoWidth / videoAspect;
         }
 
-        this.gridCanvas.width = videoWidth;
-        this.gridCanvas.height = videoHeight;
         this.handCanvas.width = videoWidth;
         this.handCanvas.height = videoHeight;
         this.shaderCanvas.width = this.video.videoWidth;
         this.shaderCanvas.height = this.video.videoHeight;
         this.shaderOverlayCanvas.width = videoWidth;
         this.shaderOverlayCanvas.height = videoHeight;
-        this.rightHandCanvas.width = videoWidth;
-        this.rightHandCanvas.height = videoHeight;
 
         this.glContext.gl.viewport(0, 0, this.shaderCanvas.width, this.shaderCanvas.height);
         this.gridManager.updateCanvasSizes();

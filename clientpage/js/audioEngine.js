@@ -67,7 +67,7 @@ export class AudioEngine {
 
     // Per-parameter step multiplier: how many accumulator units per rotation step.
     // Increase to make a parameter move faster per gesture.
-    stepMultiplier = [1, 1, 1, 10];  // [start, length, speed, volume]
+    stepMultiplier = [1, 1, 1, 5];  // [start, length, speed, volume]
 
     // Called by GridManager instead of HTTP POST
     // colForMax: 0=start, 1=length, 2=speed, 3=volume
